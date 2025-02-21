@@ -1,5 +1,34 @@
 import { DateTime, Zone } from 'luxon';
 
+import sinon from 'sinon';
+
+const clock = sinon.useFakeTimers({
+	now: Date.now(),
+	toFake: [
+		'setTimeout',
+		'clearTimeout',
+		'setImmediate',
+		'clearImmediate',
+		'setInterval',
+		'clearInterval',
+		'Date',
+		'hrtime',
+		'performance'
+	]
+});
+
+function scheduleTick() {
+	process.nextTick(() => {
+		clock.tick(1);
+		// clock.tick(0.001);
+		scheduleTick();
+	});
+}
+
+scheduleTick();
+
+let SEND_AT_CALLS = 0;
+
 import {
 	ALIASES,
 	CONSTRAINTS,
@@ -89,6 +118,19 @@ export class CronTime {
 			this.realDate && this.source instanceof DateTime
 				? this.source
 				: DateTime.local();
+
+		if (SEND_AT_CALLS === 5) {
+			console.log('\x1b[40m\x1b[31m%s\x1b[0m', 'add 7s to current time');
+			clock.tick(7000);
+		}
+
+		if (SEND_AT_CALLS === 7) {
+			console.log('\x1b[42m%s\x1b[0m', 'failed to repeat the bug');
+			process.exit(0);
+		}
+
+		SEND_AT_CALLS++;
+
 		if (this.timeZone) {
 			date = date.setZone(this.timeZone);
 		}
